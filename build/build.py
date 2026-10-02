@@ -12,7 +12,7 @@ import openpyxl
 from openpyxl.comments import Comment
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 
-from criteria import CM, FIT, FIT_TEXT, FIT_DEFAULT_WHY
+from criteria import CM, FIT, FIT_TEXT, FIT_DEFAULT_WHY, MMUCC, MMUCC_DERIVED, MMUCC_FR
 
 SRC, OUT = sys.argv[1], sys.argv[2]
 wb = openpyxl.load_workbook(SRC)
@@ -219,7 +219,7 @@ sm.cell(18, 2, "=SUMPRODUCT(--((Treatments!C3:C135<>Treatments!G3:G135)+(Treatme
 # ---------------------------------------------------------------- Field Reference
 fr = wb.create_sheet("Field Reference")
 FR_HEAD = ["Field (as in the builder)", "Level", "Values used in this workbook (SMS code)",
-           "New TR-310 / MMUCC equivalent", "Source / status"]
+           "New TR-310: MMUCC 6th ed. element (DOT HS 813 525, Feb 2025)", "Source / status"]
 FR = [
  ("Junction Type", "Crash",
   "NON-JUNCTION (13), Cross-Over (01), Driveway (02), Four-Way Intersection (04), T-Intersection (08), "
@@ -306,6 +306,7 @@ for j, w in enumerate(FW, 1):
     fr.column_dimensions[chr(64 + j)].width = w
 r = 3
 for row in FR:
+    row = (row[0], row[1], row[2], MMUCC_FR.get(row[0], row[3]), row[4])
     for j, v in enumerate(row, 1):
         c = fr.cell(r, j, v)
         c.font = BOLD if j == 1 else BODY
@@ -326,9 +327,12 @@ RULES = [
  "The crash still comes in through its other rows. Use '≠' on crash-level fields only.",
  "4. Pick values from the dropdown. Codes here are only to check the JSON / export. The SMS codes are "
  "not the new TR-310 codes (Pedestrian is 27 in the SMS, 26 on the new form).",
- "5. New-form (MMUCC) crash reports are not in production yet. When they load, ran off road and cross "
- "median will be in Sequence of Events only, so criteria that look for them in First Harmful Event will "
- "start missing crashes.",
+ "5. New-form (MMUCC) crash reports are not in production yet. When they load: ran off road, cross median "
+ "and cross centerline exist only in Sequence of Events; First Harmful Event has one 'Non-Motorist' value "
+ "for pedestrians and bicyclists; and Non-Junction leaves out crashes inside interchange areas. See the "
+ "'New TR-310 (MMUCC 6)' sheet.",
+ "6. In MMUCC 6 the road conditions (surface, alignment, traffic control, speed limit, lanes, trafficway "
+ "flow, median barrier) are recorded per vehicle, so rule 3 applies to them too.",
 ]
 for t in RULES:
     c = fr.cell(r, 1, t)
@@ -372,6 +376,10 @@ GLOBAL = [
   "New 'Fit with CM criteria' flag for each treatment.",
   "AASHTOWare applies the CMF only to crashes that pass the countermeasure criteria. If the CMF was "
   "measured on a different group, the benefit is off. This is the 51% vs 13% problem from the meeting."),
+ ("New sheet 'New TR-310 (MMUCC 6)'",
+  "The same 30 criteria written on MMUCC 6th edition fields.",
+  "SC's new TR-310 follows MMUCC. Checked against the MMUCC 6th edition (DOT HS 813 525, Feb 2025) so the "
+  "criteria are ready when new-form reports reach production."),
  ("Treatment Selector, column AA",
   "133 broken formulas (REF errors) fixed; 'Read this before you use it' column made visible again.",
   "They pointed to a Treatments column that had been deleted."),
@@ -402,8 +410,59 @@ for src_r in range(3, 33):
 ch.cell(2, 3).value = "Why / open item"
 ch.freeze_panes = "B3"
 
+# ---------------------------------------------------------------- MMUCC 6 version
+mm = wb.create_sheet("New TR-310 (MMUCC 6)")
+MW = [30, 66, 60]
+mm.cell(1, 1, "SAME CRITERIA ON THE NEW TR-310 (MMUCC 6TH EDITION FIELDS)").font = TITLE_FONT
+for c in range(1, 4):
+    mm.cell(1, c).fill = HDR_FILL
+mm.row_dimensions[1].height = 25.5
+mm.cell(2, 1, "For when new-form reports reach production. Field names are MMUCC's (DOT HS 813 525, Feb 2025); "
+              "SC's dropdown labels may differ. 'Pedestrian', 'Bicyclist' and 'Segment' are defined in the "
+              "first block.").font = GREY
+mm.merge_cells(start_row=2, start_column=1, end_row=2, end_column=3)
+mm.cell(2, 1).alignment = Alignment(wrap_text=True, vertical="center")
+mm.row_dimensions[2].height = 26
+for j, w in enumerate(MW, 1):
+    mm.column_dimensions[chr(64 + j)].width = w
+
+
+def mm_header(row, labels):
+    for j, h in enumerate(labels, 1):
+        c = mm.cell(row, j, h)
+        c.font = HDR_FONT
+        c.fill = HDR_FILL
+        c.alignment = Alignment(wrap_text=True, vertical="center")
+
+
+def mm_row(row, vals):
+    for j, v in enumerate(vals, 1):
+        c = mm.cell(row, j, v)
+        c.font = BOLD if j == 1 else BODY
+        c.alignment = TOP
+        c.border = BOX
+    mm.cell(row, 2).font = Font(name=MONO, sz=9, color="FF1A1A1A")
+    fit_height(mm, row, {2: 66 * 0.95, 3: 60})
+
+
+r = 4
+mm_header(r, ["Derived field", "Rebuilt on MMUCC 6 fields", "Note"])
+r += 1
+for name, logic, note in MMUCC_DERIVED:
+    mm_row(r, (name, logic, note))
+    r += 1
+r += 1
+mm_header(r, ["Countermeasure", "Crash criteria on MMUCC 6 fields", "What changes / new options"])
+r += 1
+for src_r in range(3, 33):
+    crit, note = MMUCC[src_r]
+    mm_row(r, (names[src_r], crit, note))
+    r += 1
+mm.freeze_panes = "B4"
+
 # sheet order
-order = ["Summary", "Treatment Selector", "Countermeasures", "Treatments", "Field Reference", "Changes"]
+order = ["Summary", "Treatment Selector", "Countermeasures", "Treatments", "Field Reference",
+         "New TR-310 (MMUCC 6)", "Changes"]
 wb._sheets = [wb[n] for n in order]
 wb.active = 2
 

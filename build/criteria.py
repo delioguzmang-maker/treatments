@@ -118,7 +118,7 @@ AND First Harmful Event Location ≠ Roadside
 AND First Harmful Event Location ≠ Outside Trafficway
 AND Crash Harmful Event ≠ Median Barrier""",
 "Trafficway drops undivided roads (centerline crashes), one-way ramps and roads that already have a barrier (I-20 crash 23239996). First Harmful Event Location = Median brings in every object in the median - piers, abutments, walls, poles, ditches - in one line. 'First Harmful Event ≠ Ran off Road Right' replaced with Location ≠ Roadside so a driver who goes right, overcorrects and crosses the median stays in. AADT > 20,000 matches AASHTO RDG Fig. 6-1.",
-"Median width (30 ft or less per RDG) is not in the crash data - check against inventory. Wrong-way head-ons can't be removed with crash-level fields. CMF 7040 (0.03) is cross-median only."),
+"Check whether Junction Type has interchange or ramp values: freeway crashes inside an interchange may not be NON-JUNCTION. Median width (30 ft or less per RDG) is not in the crash data - check against inventory. Wrong-way head-ons can't be removed with crash-level fields. CMF 7040 (0.03) is cross-median only."),
 
 16: ("Any", "Segment (curve)", "Run-off-road, fixed object, rollover", "Any", "Curve",
 """Roadway Departure = Yes
@@ -328,4 +328,166 @@ FIT_DEFAULT_WHY = {
  "LOW": "CMF is for all crash types",
  "HIGH": "",
  "CHECK": "",
+}
+
+
+# ----------------------------------------------------------------------------
+# Same criteria written on MMUCC 6th edition fields (DOT HS 813 525, Feb 2025),
+# for when new-form TR-310 reports reach production. Element names are MMUCC's;
+# SC's dropdown labels may differ slightly.
+
+M_RD_EXCL = ("AND Related Factors - Crash Level ≠ Obstruction in Roadway\n"
+             "AND First Harmful Event ≠ Other Object (not fixed)")
+M_SEGMENT = ("Relation to Junction = Non-Junction, Through Roadway\n"
+             "                       or Other Location Within an Interchange Area")
+M_CURVE = "AND Roadway Alignment = Curve Left or Curve Right"
+
+# Derived fields rebuilt on MMUCC 6 (what Numetric would need to change).
+MMUCC_DERIVED = [
+ ("Roadway Departure",
+  "Manner of Collision = The First Harmful Event Was Not a Collision With a Motor Vehicle In-Transport\n"
+  "AND First Harmful Event ≠ Non-Motorist\n"
+  "AND First Harmful Event ≠ Live Animal\n"
+  "AND First Harmful Event ≠ Ridden Animal or Animal-Drawn Conveyance",
+  "Deer and other animals are one attribute (Live Animal) in MMUCC 6."),
+ ("Lane Departure",
+  "Roadway Departure = Yes\n"
+  "OR Manner of Collision = Front to Front\n"
+  "OR Manner of Collision = Sideswipe, Opposite Direction",
+  "'Head On' is called Front to Front."),
+ ("Intersection Related",
+  "Relation to Junction = Intersection or Related",
+  "Type of Intersection (C13) gives the shape. Driveways are their own value (Driveway Access or Related)."),
+ ("Pedestrian",
+  "First Harmful Event = Non-Motorist\n"
+  "AND (   Person Type = Pedestrian Walking, Running, Jogging, Hiking, Sitting, Lying\n"
+  "     OR Person Type = Pedestrian on Personal Conveyance )",
+  "First Harmful Event no longer splits pedestrian and bicycle - Person Type (P5) does."),
+ ("Bicyclist",
+  "Person Type = Bicyclist OR Person Type = Other Cyclist",
+  "Or Non-Motorist Device Type (NM9) = Bicycle / Other Cycle."),
+ ("Segment (non-intersection)",
+  M_SEGMENT,
+  "In MMUCC 6, Non-Junction only covers crashes OUTSIDE an interchange area. Freeway mainline crashes "
+  "inside an interchange are Through Roadway; median/shoulder/roadside ones are Other Location Within an "
+  "Interchange Area."),
+]
+
+# row: (criteria on MMUCC 6 fields, what is different / new options)
+MMUCC = {
+3: ("Speeding-Related = Yes, Exceeded Speed Limit\n OR Speeding-Related = Yes, Racing",
+    "Too Fast for Conditions is its own attribute (D5), so the team's decision maps one to one."),
+4: ("Bicyclist = Yes",
+    "New option: Non-Motorist Specific Location (NM7) = In Painted Cycle Lane / In Physically Separated Cycle Lane shows whether a bike lane was already there."),
+5: ("Pedestrian = Yes\nAND Intersection Related = Yes",
+    "New option: Non-Motorist in Crosswalk (NM6) = Yes, Marked / Yes, Unmarked, and Non-Motorist Status (NM2) = Crossing."),
+6: ("Pedestrian = Yes\nAND Intersection Related = Yes\nAND Traffic Control Device = Traffic Control Signal",
+    "Traffic Control Device (V31) is per vehicle; '=' works. New option: Non-Motorist Traffic Control Device (NM10) = Non-Motorist Crossing Signal - an LPI needs pedestrian signal heads."),
+7: ("Pedestrian = Yes\nAND Relation to Junction ≠ Intersection or Related\nAND Area Type = Urban\nAND Through Lanes >= 4",
+    "Lanes still from road inventory (V27 counts one direction only on divided roads). New option: NM2 = Crossing."),
+8: ("Pedestrian = Yes\nAND Relation to Junction ≠ Intersection or Related\nAND Traffic Control Device ≠ Traffic Control Signal\n"
+    "AND (   Motor Vehicle Posted or Statutory Speed Limit >= 35\n     OR Through Lanes >= 4 )",
+    "Speed limit is now on the crash report (V24, per vehicle). New option: NM2 = Crossing, NM10 = None."),
+9: ("Pedestrian = Yes\nAND Relation to Junction ≠ Intersection or Related\nAND Traffic Control Device ≠ Traffic Control Signal\n"
+    "AND Motor Vehicle Posted or Statutory Speed Limit <= 40",
+    "Same options as PHB."),
+10: ("Area Type = Urban\nAND Median Barrier Presence = Not Applicable (no median)\nAND Trafficway Flow = Two-Way\n"
+     "AND Number of Open Lanes = 4\nAND AADT <= 20000\n"
+     "AND (   Manner of Collision = Front-to-Rear or Rear-to-Front\n     OR Manner of Collision = Front to Front\n"
+     "     OR Manner of Collision = Angle\n     OR Pedestrian = Yes\n     OR Bicyclist = Yes )",
+     "Trafficway Flow = Two-Way (not 'With a Continuous Left-Turn Lane') leaves out roads that are already three-lane. On an undivided road V27 counts both directions, so 4 = four-lane undivided."),
+11: ("Pedestrian = Yes\nAND Relation to Junction ≠ Intersection or Related",
+     "New option: NM2 = Movement Against Traffic / Movement With Traffic - the 'walking along the road' filter becomes possible."),
+12: ("Lane Departure = Yes\nAND " + M_SEGMENT + "\n" + M_CURVE + "\n" + M_RD_EXCL,
+     "Curve Left / Curve Right exist again (V28, per vehicle). There is no 'Debris' attribute: debris hits are First Harmful Event = Other Object (not fixed)."),
+13: ("Lane Departure = Yes\nAND Roadway Departure = No\nAND Relation to Junction = Non-Junction\n"
+     "AND Median Barrier Presence = Not Applicable (no median)\nAND Number of Open Lanes = 2\nAND Area Type = Rural",
+     "New option: Sequence of Events = Cross Centerline brings in single-vehicle centerline crossings."),
+14: ("Roadway Departure = Yes\nAND " + M_SEGMENT + "\nAND Area Type = Rural\n" + M_RD_EXCL,
+     "New option: Sequence of Events = Ran Off Roadway Right."),
+15: ("" + M_SEGMENT + "\nAND Median Barrier Presence = Median Without a Traffic Barrier\nAND AADT > 20000\n"
+     "AND (   Manner of Collision = Front to Front\n     OR Manner of Collision = Sideswipe, Opposite Direction\n"
+     "     OR Sequence of Events = Cross Median\n     OR Sequence of Events = Ran Off Roadway Left\n"
+     "     OR Location of First Harmful Event = On Median )\n"
+     "AND Location of First Harmful Event ≠ On Roadside\nAND Location of First Harmful Event ≠ Non-Trafficway Area",
+     "Median Barrier Presence (V26) replaces Trafficway 2/3. Cross Median and Ran Off Roadway Left only exist in Sequence of Events. Without Through Roadway / Other Location Within an Interchange Area every freeway crash inside an interchange drops out. Manner of Collision is only for the FIRST harmful event, so a car that hits a median object and then an opposing car is caught by Sequence of Events, not by Front to Front. Wrong-way drivers: D10 has 'Driving on Wrong Side of Two-Way Trafficway', but it is a driver field, so '≠' won't remove the crash."),
+16: ("Roadway Departure = Yes\nAND " + M_SEGMENT + "\n" + M_CURVE +
+     "\nAND (   Location of First Harmful Event = On Roadside\n     OR Location of First Harmful Event = On Shoulder )\n" + M_RD_EXCL,
+     ""),
+17: ("Roadway Departure = Yes\nAND " + M_SEGMENT +
+     "\nAND (   Location of First Harmful Event = On Roadside\n     OR Location of First Harmful Event = On Shoulder )\n"
+     "AND First Harmful Event ≠ Guardrail Face\nAND First Harmful Event ≠ Guardrail End\n"
+     "AND First Harmful Event ≠ Concrete Traffic Barrier\nAND First Harmful Event ≠ Cable Barrier\n" + M_RD_EXCL,
+     "MMUCC splits barriers into cable, concrete, guardrail face/end and other."),
+18: ("Roadway Departure = Yes\nAND " + M_SEGMENT + "\nAND Area Type = Rural\n" + M_RD_EXCL,
+     "New option: Related Factors - Driver Level (D10) = Overcorrecting, which is the edge drop-off crash SafetyEdge targets."),
+19: ("Roadway Departure = Yes\nAND " + M_SEGMENT + "\nAND Area Type = Rural\n" + M_RD_EXCL,
+     ""),
+20: ("Intersection Related = Yes\nAND Traffic Control Device = Traffic Control Signal\n"
+     "AND (   Manner of Collision = Angle\n     OR Manner of Collision = Front-to-Rear or Rear-to-Front )", ""),
+21: ("(   Intersection Related = Yes\n OR Relation to Junction = Driveway Access or Related )\n"
+     "AND (   Manner of Collision = Angle\n     OR Manner of Collision = Front-to-Rear or Rear-to-Front\n"
+     "     OR Manner of Collision = Front to Front )", ""),
+22: ("Intersection Related = Yes\nAND (   Manner of Collision = Front-to-Rear or Rear-to-Front\n     OR Manner of Collision = Angle )",
+     "New option: Vehicle Status Prior to Critical Event (V33) = Turning Right."),
+23: ("Intersection Related = Yes\nAND (   Manner of Collision = Angle\n     OR Manner of Collision = Front-to-Rear or Rear-to-Front\n"
+     "     OR Manner of Collision = Front to Front )",
+     "New option: V33 = Turning Left."),
+24: ("Intersection Related = Yes\nAND (   Manner of Collision = Angle\n     OR Manner of Collision = Front to Front )",
+     "New option: Median Barrier Presence = Median Without a Traffic Barrier (J-turns and RCUTs need a median). Existing RCUTs are Type of Intersection = Other Intersection Type."),
+25: ("Intersection Related = Yes\nAND Traffic Control Device = Traffic Control Signal\n"
+     "AND (   Manner of Collision = Angle\n     OR Manner of Collision = Front to Front )\n"
+     "AND Vehicle Status Prior to Critical Event = Turning Left", ""),
+26: ("Intersection Related = Yes\nAND Type of Intersection ≠ Circular Intersection\n"
+     "AND (   Manner of Collision = Angle\n     OR Manner of Collision = Front to Front )", ""),
+27: ("Intersection Related = Yes\nAND Traffic Control Device = Stop Sign\nAND Manner of Collision = Angle", ""),
+28: ("Intersection Related = Yes\nAND Traffic Control Device = Stop Sign\nAND Manner of Collision = Angle\nAND Area Type = Rural", ""),
+29: ("Traffic Control Device = Stop Sign\nAND (   Type of Intersection = T-Intersection\n     OR Type of Intersection = Y-Intersection\n"
+     "     OR Type of Intersection = Four-Leg Intersection )",
+     "MMUCC adds L-Intersection; left out here."),
+30: ("Intersection Related = Yes\nAND Traffic Control Device = Traffic Control Signal\n"
+     "AND (   Manner of Collision = Front-to-Rear or Rear-to-Front\n     OR Manner of Collision = Angle )\n"
+     "AND Related Factors - Driver Level = Failure to Obey Traffic Control Devices", ""),
+31: ("(   Light Condition = Dark - Not Lighted\n OR Light Condition = Dark - Lighted\n OR Light Condition = Dark - Unknown Lighting )\n"
+     "AND Manner of Collision ≠ Front-to-Rear or Rear-to-Front",
+     "MMUCC has three dark values; the SMS has four."),
+32: ("Roadway Surface Condition = Wet\nAND (   Roadway Departure = Yes\n     OR Roadway Alignment = Curve Left\n"
+     "     OR Roadway Alignment = Curve Right )\n" + M_RD_EXCL,
+     "Water (standing or moving) is its own attribute; left out - that is drainage, not friction."),
+}
+
+# Field Reference: MMUCC 6 equivalents, keyed by the SMS field name.
+MMUCC_FR = {
+ "Junction Type":
+  "C12 Relation to Junction (Specific Location: Non-Junction, Intersection or Related, Driveway Access or "
+  "Related, Crossover-Related, Entrance or Exit Ramp or Related, Through Roadway, Other Location Within an "
+  "Interchange Area...) + C13 Type of Intersection (T, Y, L, Four-Leg, Five or More Legs, Circular, Other e.g. RCUT)",
+ "Manner of Collision":
+  "C9 Manner of Collision of the First Harmful Event: Not a Collision With a MV In-Transport, Angle, Front to "
+  "Front, Front-to-Rear or Rear-to-Front, Rear to Rear, Rear-to-Side, Sideswipe Opposite / Same Direction",
+ "First Harmful Event / Crash Harmful Event":
+  "C7 First Harmful Event. No ran-off-road or cross-median values. Non-Motorist covers peds and bikes; Live "
+  "Animal has no deer split. No crash-level 'most harmful event' - V38 is per vehicle.",
+ "Sequence of Events":
+  "V37 Sequence of Events (per vehicle, multi-select): Cross Centerline, Cross Median, Ran Off Roadway Left / "
+  "Right / Direction Unknown, Re-Entering Roadway...",
+ "First Harmful Event Location":
+  "C8 Location of First Harmful Event: On Roadway, Continuous Left-Turn Lane, On Shoulder, On Roadside, On "
+  "Median, Pedestrian Refuge Island or Traffic Island, In Parking Lane, Separator, Gore, Non-Trafficway Area",
+ "Trafficway":
+  "V25 Trafficway Flow (One-Way, Two-Way, Two-Way With a Continuous Left-Turn Lane) + V26 Median Barrier "
+  "Presence (Not Applicable - no median; Median Without a Traffic Barrier; Median With Traffic Barrier). Both per vehicle.",
+ "Road Character": "V28 Roadway Alignment (Straight, Curve Left, Curve Right) + V29 Roadway Grade. Per vehicle.",
+ "Light Condition": "C11 Light Condition: Dark - Lighted, Dark - Not Lighted, Dark - Unknown Lighting",
+ "Road Surface Condition": "V30 Roadway Surface Condition (per vehicle): Wet. Water (standing or moving) is separate.",
+ "Traffic Control": "V31 Traffic Control Device (per vehicle): Stop Sign, Traffic Control Signal, Flashing Traffic Control Signal...",
+ "Probable Cause":
+  "Split in three: D5 Speeding-Related (Yes, Racing / Exceeded Speed Limit / Too Fast for Conditions); D10 "
+  "Related Factors - Driver Level (Failure to Obey Traffic Control Devices, Overcorrecting...); C17 Related "
+  "Factors - Crash Level (Obstruction in Roadway). No 'Debris' value.",
+ "Unit Type": "P5 Person Type (Pedestrian..., Bicyclist, Other Cyclist) + NM9 Non-Motorist Device Type",
+ "Vehicle Maneuver (unit movement)": "V33 Vehicle Status Prior to Critical Event: Turning Left, Turning Right, Negotiating a Curve...",
+ "Roadway: AADT, Through Lanes, Speed Limit, Area Type":
+  "AADT and area type are not on the report (link to road inventory, Ch. 10). Speed limit is V24 and lanes "
+  "are V27 Number of Open Lanes, both per vehicle.",
 }

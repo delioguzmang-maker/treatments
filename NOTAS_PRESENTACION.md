@@ -137,10 +137,36 @@ Las etiquetas salen del diccionario de SC; estas no las vi en tu pantalla:
 3. Los 25 treatments con "Overstates": ¿se quitan, se separan en otra countermeasure (por ejemplo, curvas de noche) o se aceptan con nota?
 4. Intersection Related está construido sobre Junction Type. Hoy funciona porque producción tiene el formato viejo, pero hay que rehacerlo cuando entren los reportes nuevos.
 
+## 9. Lo que dice el MMUCC 6ª edición (hoja *New TR-310 (MMUCC 6)*)
+
+Revisé el manual completo (DOT HS 813 525, revisión de febrero 2025). Confirma lo que ya está en las criteria del SMS y muestra lo que va a cambiar cuando los reportes nuevos lleguen a producción. La hoja nueva tiene las 30 criteria reescritas con campos MMUCC 6.
+
+**Lo que confirma:**
+- *Ran off road*, *Cross Median* y *Cross Centerline* **no son harmful events**. Solo existen en Sequence of Events (V37). Tu query original buscaba `Crash Harmful Event = Ran off Road Left` y `First Harmful Event = Cross Median/Center`: con datos MMUCC eso va a dar cero. La v8 ya usa Sequence of Events.
+- Location of First Harmful Event (C8) sigue teniendo *On Median*, *On Roadside* y *On Shoulder*. El enfoque de median barriers por ubicación funciona igual en el formato nuevo.
+- Speeding-Related (D5) separa *Racing*, *Exceeded Speed Limit* y *Too Fast for Conditions*. La decisión del equipo de enero 2025 se traduce uno a uno.
+
+**Lo que cambia y hay que tener en cuenta:**
+1. **Non-Junction ya no cubre las autopistas dentro de un intercambio.** En MMUCC 6, Relation to Junction (C12) usa *Through Roadway* para la vía principal dentro de un intercambio, y *Other Location Within an Interchange Area* para la mediana, el hombro y el borde. Si median barriers solo pide Non-Junction, se pierden todos esos choques. En la hoja MMUCC lo agrupé como "Segment". **También hay que revisar si hoy el Junction Type del SMS tiene valores de intercambio o rampa** (los códigos 06, 10 y 11 no salieron en el diccionario). Lo agregué como pendiente en Median Barriers.
+2. **Peatón y ciclista ya no se separan en First Harmful Event.** Hay un solo valor, *Non-Motorist*; la diferencia está en Person Type (P5). Lo mismo con animales: *Live Animal*, sin separar venados.
+3. **La mediana con barrera tiene su propio campo:** Median Barrier Presence (V26) reemplaza Trafficway 2 y 3. Trafficway Flow (V25) distingue *Two-Way With a Continuous Left-Turn Lane*, lo que sirve en Road Diets para no recomendar donde ya hay tres carriles.
+4. **Las condiciones de la vía pasan a ser por vehículo:** superficie, alineamiento (vuelve *Curve Left / Curve Right*), control de tráfico, límite de velocidad, carriles, flujo y barrera. Con `=` funciona igual; con `≠` aplica la trampa del punto 2.3.
+5. **No existe "Debris".** *Obstruction in Roadway* está en Related Factors – Crash Level (C17); los escombros salen como First Harmful Event = *Other Object (not fixed)*.
+6. **Campos nuevos que resuelven pendientes de hoy:**
+   - Walkways: Non-Motorist Status (NM2) = *Movement With / Against Traffic*. Es el filtro de "caminando por la vía" que hoy no se puede hacer.
+   - LPI: Non-Motorist Traffic Control Device (NM10) = *Non-Motorist Crossing Signal*, porque el LPI necesita semáforo peatonal.
+   - Crosswalks: Non-Motorist in Crosswalk (NM6) = *Yes, Marked / Unmarked*.
+   - Yellow Change: Related Factors – Driver Level (D10) = *Failure to Obey Traffic Control Devices*.
+   - SafetyEdge: D10 = *Overcorrecting*.
+   - RCUT existentes: Type of Intersection = *Other Intersection Type*.
+7. **Numetric tiene que rehacer los campos derivados** (Roadway Departure, Lane Departure, Intersection Related, Pedestrian) sobre estos campos. La definición propuesta está arriba en la hoja MMUCC.
+
+Aviso: los nombres son los del MMUCC. El TR-310 nuevo de SC puede usar etiquetas un poco distintas.
+
 ---
 
 ### Lo que no pude hacer
 
-- **Manual MMUCC:** el archivo que llegó (MMUCC 6ª edición revisada) trae solo un pedazo del índice (~8 KB: elementos P19-P20, NM1-NM10, capítulos 9-12 y la lista de figuras), no el contenido. Las equivalencias MMUCC del workbook van por nombre de elemento, sin número, hasta poder revisar las listas de atributos de la 6ª edición.
+- **Manual MMUCC:** ya revisado (6ª edición completa); ver sección 9.
 - **Sin acceso a la red** del CMF Clearinghouse, Numetric ni NHTSA desde este entorno (el proxy los bloquea). Los códigos de SC salen de búsquedas sobre el diccionario de SCDPS 6/2010, y la revisión de CMFs se hizo con los datos que ya estaban en la hoja Treatments.
 - **Sin datos de choques**, así que no corrí conteos. Las pruebas de la sección 3 son con los cuatro choques que ya habías revisado.
