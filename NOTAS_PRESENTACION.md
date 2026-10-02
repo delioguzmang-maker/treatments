@@ -141,6 +141,6 @@ Las etiquetas salen del diccionario de SC; estas no las vi en tu pantalla:
 
 ### Lo que no pude hacer
 
-- **El manual MMUCC no llegó.** Solo recibí el xlsx, el filter logic, la transcripción y el har.txt (que es un export de la conversación anterior, no un HAR del SMS). Usé lo que sé del MMUCC 5ª edición (2017) para la columna de equivalencias.
+- **Manual MMUCC:** el archivo que llegó (MMUCC 6ª edición revisada) trae solo un pedazo del índice (~8 KB: elementos P19-P20, NM1-NM10, capítulos 9-12 y la lista de figuras), no el contenido. Las equivalencias MMUCC del workbook van por nombre de elemento, sin número, hasta poder revisar las listas de atributos de la 6ª edición.
 - **Sin acceso a la red** del CMF Clearinghouse, Numetric ni NHTSA desde este entorno (el proxy los bloquea). Los códigos de SC salen de búsquedas sobre el diccionario de SCDPS 6/2010, y la revisión de CMFs se hizo con los datos que ya estaban en la hoja Treatments.
 - **Sin datos de choques**, así que no corrí conteos. Las pruebas de la sección 3 son con los cuatro choques que ya habías revisado.

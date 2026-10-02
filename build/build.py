@@ -219,7 +219,7 @@ sm.cell(18, 2, "=SUMPRODUCT(--((Treatments!C3:C135<>Treatments!G3:G135)+(Treatme
 # ---------------------------------------------------------------- Field Reference
 fr = wb.create_sheet("Field Reference")
 FR_HEAD = ["Field (as in the builder)", "Level", "Values used in this workbook (SMS code)",
-           "New TR-310 / MMUCC 5th equivalent", "Source / status"]
+           "New TR-310 / MMUCC equivalent", "Source / status"]
 FR = [
  ("Junction Type", "Crash",
   "NON-JUNCTION (13), Cross-Over (01), Driveway (02), Four-Way Intersection (04), T-Intersection (08), "
@@ -229,7 +229,7 @@ FR = [
  ("Manner of Collision", "Crash",
   "Non Collision (00), Rear End (10), Head On (20), Angle (41/42/43), Sideswipe, Same Direction (50), "
   "Sideswipe, Opposite Direction (60)",
-  "C9 Manner of Crash: Front to Rear, Front to Front, Angle, Sideswipe... New-form codes differ "
+  "Manner of Crash/Collision: Front to Rear, Front to Front, Angle, Sideswipe... New-form codes differ "
   "(Angle is 80 there, not in the SMS)",
   "Confirmed: your query + SC dictionary. Angle may list three times."),
  ("First Harmful Event / Crash Harmful Event", "Crash",
@@ -237,17 +237,17 @@ FR = [
   "Animal - Deer (20), Animal - Other (21), Pedalcycle (26), Pedestrian (27), Bridge Parapet End (41), "
   "Bridge Pier or Abutment (42), Bridge Rail (43), Culvert (44), Ditch (46), Embankment (47), "
   "Guardrail End (50), Guardrail Face (51), Median Barrier (56), Tree (60), Utility Pole (61)",
-  "C7 First Harmful Event. Under MMUCC, ran off road and cross median are NOT harmful events - "
+  "First Harmful Event. Under MMUCC, ran off road and cross median are NOT harmful events - "
   "they only go in Sequence of Events. New-form codes differ (Pedestrian 26, Pedalcycle 25).",
   "Confirmed: SC dictionary. Crash Harmful Event = most harmful event of the crash."),
  ("Sequence of Events", "Unit (one row per event)",
   "Same list as above. Used here: Cross Median/Center, Ran off Road Left",
-  "V20 Sequence of Events",
+  "Sequence of Events",
   "Use with '=' only. '≠' drops that row, not the crash."),
  ("First Harmful Event Location", "Crash",
   "Gore (1), Island (2), Median (3), Roadside (4), Roadway (5), Shoulder (6), Sidewalk (7), "
   "Outside Trafficway (8), Unknown (9)",
-  "C8 Location of First Harmful Event",
+  "Location of First Harmful Event Relative to the Trafficway",
   "Confirmed: SMS dictionary you sent"),
  ("Trafficway", "Crash / Roadway",
   "Two-Way, Not Divided (1); Two-Way, Divided, Unprotected Median (2); Two-Way, Divided, Barrier (3); "
